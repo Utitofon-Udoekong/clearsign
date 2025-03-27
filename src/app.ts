@@ -13,7 +13,8 @@ export const logger = createLogger()
 
 // Global configs
 //
-dotenv.config()
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env'
+dotenv.config({ path: envFile })
 
 const MAX_SHUTDOWN_WAIT_TIME = 5000 // ms
 const PORT = Number(process.env.PORT) || 3000

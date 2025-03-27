@@ -1,9 +1,11 @@
 import { name, version } from '@root/package.json'
 import request from 'supertest'
+import { authenticator } from 'otplib'
 
 import { app, server } from '@/app'
 import { DetectionRequest, DetectionResponse } from '@/modules/detection-module/dtos'
 import { HTTP_STATUS_CODES } from '@/types'
+import { TwoFactorAuthService } from '@/modules/detection-module/services/two-factor-auth.service'
 
 const ethereumAddress = '0xfdD055Cf3EaD343AD51f4C7d1F12558c52BaDFA5'
 const zeroAddress = '0x0000000000000000000000000000000000000000'
@@ -40,6 +42,9 @@ describe('Service Tests', () => {
     })
 
     describe('Detection Controller', () => {
+        const userSecret = TwoFactorAuthService.generateSecret()
+        const twoFactorCode = authenticator.generate(userSecret)
+
         const requestPayload: Partial<DetectionRequest> = {
             id: 'unique-id',
             detectorName: 'test-detector',
@@ -86,6 +91,10 @@ describe('Service Tests', () => {
                     },
                 ],
             },
+            additionalData: {
+                twoFactorCode,
+                userSecret
+            }
         }
 
         test('detect success', async () => {
@@ -138,6 +147,48 @@ describe('Service Tests', () => {
             expect(response.body.message).toContain('trace.from')
             expect(response.body.message).toContain('trace.to')
             expect(response.body.message).toContain('trace.logs.0.address')
+        })
+
+        test('detect 2FA required', async () => {
+            const highValueRequest = {
+                ...requestPayload,
+                trace: {
+                    ...requestPayload.trace,
+                    value: '2000000000000000000' // 2 ETH
+                }
+            }
+
+            const response = await request(app)
+                .post('/detect')
+                .send(highValueRequest)
+                .set('Content-Type', 'application/json')
+
+            const body: DetectionResponse = response.body
+            expect(response.status).toBe(HTTP_STATUS_CODES.OK)
+            expect(body.detected).toBeFalsy()
+            expect(body.message).toBe('2FA verification successful')
+        })
+
+        test('detect 2FA missing', async () => {
+            const highValueRequest = {
+                ...requestPayload,
+                trace: {
+                    ...requestPayload.trace,
+                    value: '2000000000000000000' // 2 ETH
+                },
+                additionalData: undefined
+            }
+
+            const response = await request(app)
+                .post('/detect')
+                .send(highValueRequest)
+                .set('Content-Type', 'application/json')
+
+            const body: DetectionResponse = response.body
+            expect(response.status).toBe(HTTP_STATUS_CODES.OK)
+            expect(body.detected).toBeTruthy()
+            expect(body.error).toBeTruthy()
+            expect(body.message).toBe('2FA verification required but missing code or secret')
         })
     })
 })

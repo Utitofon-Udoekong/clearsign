@@ -7,8 +7,8 @@
         "build": "rm -rf dist && NODE_ENV=production tsc && tsc-alias dist --outDir ./dist",
         "preview": "NODE_ENV=development node dist/src/app.js",
         "start": "NODE_ENV=production node dist/src/app.js",
-        "test": "jest --silent=false",
-        "test:watch": "jest --watch",
+        "test": "NODE_ENV=test jest --silent=false",
+        "test:watch": "NODE_ENV=test jest --watch",
         "ts-check": "tsc --noEmit",
         "lint": "eslint . --ext .ts",
         "lint:fix": "eslint . --ext .ts --fix"
@@ -34,8 +34,10 @@
         "class-validator": "^0.14.1",
         "cors": "^2.8.5",
         "dotenv": "^16.4.5",
+        "ethers": "^6.13.5",
         "express": "^4.19.2",
         "morgan": "^1.10.0",
+        "otplib": "^12.0.1",
         "reflect-metadata": "^0.2.2",
         "winston": "^3.14.1"
     },

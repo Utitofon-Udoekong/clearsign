@@ -6,10 +6,131 @@
 ![ESLint](https://img.shields.io/badge/ESLint-4B3263?style=for-the-badge&logo=eslint&logoColor=white)
 ![Yarn](https://img.shields.io/badge/yarn-%232C8EBB.svg?style=for-the-badge&logo=yarn&logoColor=white)
 
-# Venn Custom Detector boilerplate
-A boilerplate for getting started with Venn as a Security Provider. Use is as a starting point to build your own custom detectors on Venn Network.
+# Venn 2FA Custom Detector
 
-> 📚 [What is Venn?](https://docs.venn.build/)
+A custom detector for the Venn Network that implements Two-Factor Authentication (2FA) for high-risk transactions. This detector helps protect users by requiring additional verification for transactions that meet certain risk criteria.
+
+## Features
+
+- 2FA verification for high-risk transactions
+- Support for authenticator apps (Google Authenticator, Authy, etc.)
+- Risk assessment based on:
+  - Transaction value (> 1 ETH)
+  - Known protocol interactions (Uniswap, Aave, etc.)
+  - Contract calls
+
+## How It Works
+
+1. The detector analyzes incoming transactions to determine if they require 2FA verification
+2. For transactions that require 2FA:
+   - The user must provide a valid 2FA code
+   - The code is verified using TOTP (Time-based One-Time Password)
+   - The transaction is only allowed to proceed if verification is successful
+
+## Setup
+
+1. Install dependencies:
+   ```bash
+   yarn install
+   ```
+
+2. Configure environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Start the service:
+   ```bash
+   yarn dev
+   ```
+
+## Usage
+
+### For Users
+
+1. Generate a 2FA secret:
+   ```typescript
+   const secret = TwoFactorAuthService.generateSecret()
+   ```
+
+2. Get QR code URL for authenticator app:
+   ```typescript
+   const qrCodeUrl = TwoFactorAuthService.generateQRCodeURL(secret, userAddress)
+   ```
+
+3. Scan QR code with authenticator app
+
+4. When making transactions, include 2FA code in additionalData:
+   ```typescript
+   {
+     additionalData: {
+       twoFactorCode: "123456", // Code from authenticator app
+       userSecret: "JBSWY3DPEHPK3PXP" // User's 2FA secret
+     }
+   }
+   ```
+
+### For Developers
+
+The detector will automatically:
+- Identify high-risk transactions
+- Require 2FA verification when needed
+- Verify 2FA codes
+- Return appropriate responses
+
+## Testing
+
+Run the test suite:
+```bash
+yarn test
+```
+
+## Example Transactions
+
+### High-Value Transaction
+```json
+{
+  "trace": {
+    "value": "2000000000000000000", // 2 ETH
+    "calls": []
+  },
+  "protocolName": "unknown",
+  "additionalData": {
+    "twoFactorCode": "123456",
+    "userSecret": "JBSWY3DPEHPK3PXP"
+  }
+}
+```
+
+### Protocol Interaction
+```json
+{
+  "trace": {
+    "value": "0",
+    "calls": []
+  },
+  "protocolName": "uniswap",
+  "additionalData": {
+    "twoFactorCode": "123456",
+    "userSecret": "JBSWY3DPEHPK3PXP"
+  }
+}
+```
+
+## Security Considerations
+
+1. 2FA secrets should be stored securely
+2. Codes expire after 30 seconds
+3. Invalid codes are rejected
+4. Missing 2FA data results in transaction rejection
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
 
 ## Table of Contents
 - [Introduction](#venn-custom-detector-boilerplate)
